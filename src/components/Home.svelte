@@ -6,7 +6,7 @@
     var count = 1;
 
     const projectsQuery = gql`
-        query MyQuery {
+        query AllDataQuery {
             queryProject {
                 id
                 name
@@ -208,13 +208,17 @@
     const mutateUpdateSubTaskStatus = mutation(updateSubTaskStatusQuery);
 
     function addProject(name) {
-        mutateAddProject({ variables: { name } }).then(() => refresh());
+        mutateAddProject({
+            variables: { name },
+            refetchQueries: [`AllDataQuery`],
+        });
     }
 
     function addTask(id, name, status) {
-        mutateAddTask({ variables: { id, name, status } }).then(() =>
-            refresh()
-        );
+        mutateAddTask({
+            variables: { id, name, status },
+            refetchQueries: [`AllDataQuery`],
+        });
     }
 
     function addSubTask(id, name, status) {
@@ -222,7 +226,8 @@
         const taskStatus = "P";
         mutateAddSubTask({
             variables: { id, name, status, taskId, taskStatus },
-        }).then(() => refresh());
+            refetchQueries: [`AllDataQuery`],
+        });
     }
 
     function deleteProject(id) {
@@ -230,7 +235,8 @@
         var subTaskIds = getSubTaskIDsOfProject(id);
         mutateDeleteProject({
             variables: { id, taskIds, subTaskIds },
-        }).then(() => refresh());
+            refetchQueries: [`AllDataQuery`],
+        });
     }
 
     function getTaskIdsOfProject(projectID) {
@@ -266,9 +272,10 @@
     function deleteTask(id) {
         var subTaskIds = getSubTaskIdsOfTask(id);
 
-        mutateDeleteTask({ variables: { id, subTaskIds } }).then(() =>
-            refresh()
-        );
+        mutateDeleteTask({
+            variables: { id, subTaskIds },
+            refetchQueries: [`AllDataQuery`],
+        });
     }
 
     function getSubTaskIdsOfTask(taskId) {
@@ -292,23 +299,29 @@
 
         mutateDeleteSubTask({
             variables: { id, taskId, taskStatus },
-        }).then(() => refresh());
+            refetchQueries: [`AllDataQuery`],
+        });
     }
 
     function updateProject(id, name) {
-        mutateUpdateProject({ variables: { id, name } }).then(() => refresh());
+        mutateUpdateProject({
+            variables: { id, name },
+            refetchQueries: [`AllDataQuery`],
+        });
     }
 
     function updateTask(id, name, status) {
-        mutateUpdateTask({ variables: { id, name, status } }).then(() =>
-            refresh()
-        );
+        mutateUpdateTask({
+            variables: { id, name, status },
+            refetchQueries: [`AllDataQuery`],
+        });
     }
 
     function updateSubTask(id, name, status) {
-        mutateUpdateSubTask({ variables: { id, name, status } }).then(() =>
-            refresh()
-        );
+        mutateUpdateSubTask({
+            variables: { id, name, status },
+            refetchQueries: [`AllDataQuery`],
+        });
     }
 
     function updateSubTaskStatus(id, status, taskId) {
@@ -322,7 +335,8 @@
 
         mutateUpdateSubTaskStatus({
             variables: { id, status, taskId, taskStatus },
-        }).then(() => refresh());
+            refetchQueries: [`AllDataQuery`],
+        });
     }
 
     function calcTaskStatus(taskId, ignoreSubTaskId) {
@@ -366,12 +380,6 @@
     function getLabel(title) {
         count++;
         return title + " " + count;
-    }
-
-    function refresh() {
-        if (!projects.loading) {
-            projects.refetch();
-        }
     }
 
     function decodeStatus(status) {
