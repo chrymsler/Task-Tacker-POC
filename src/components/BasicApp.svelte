@@ -395,9 +395,11 @@
     }
 </script>
 
-<main>Projects</main>
-<a on:click={() => addProject(getLabel("Project"))}>[Add Project]</a>
-<a on:click={() => projects.refetch()}>[Refresh]</a>
+<main>
+    Projects
+    <a on:click={() => addProject(getLabel("Project"))}>[Add Project]</a>
+    <a on:click={() => projects.refetch()}>[Refresh]</a>
+</main>
 <div>
     {#if $projects.loading}
         Loading...

@@ -22,13 +22,19 @@
 	setClient(client);
 
 	import { Router, Route, Link } from "svelte-routing";
-	import Home from "./components/Home.svelte";
+	import BasicApp from "./components/BasicApp.svelte";
+	import SubscribeApp from "./components/SubscribeApp.svelte";
 
 	export let url = "";
 </script>
 
 <Router {url}>
-	<nav><Link to="/">Home</Link></nav>
+	<nav>
+		<Link to="/">[Basic App]</Link>
+		<Link to="/subscribe">[Subscribe App]</Link>
+	</nav>
+	<hr />
 
-	<div><Route path="/"><Home /></Route></div>
+	<div><Route path="/"><BasicApp /></Route></div>
+	<div><Route path="/subscribe"><SubscribeApp /></Route></div>
 </Router>
