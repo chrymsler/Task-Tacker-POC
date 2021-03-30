@@ -26,15 +26,6 @@
         }
     `;
 
-    const deleteProjectQuery = gql`
-        mutation MyMutation($id: [ID!]) {
-            deleteProject(filter: { id: $id }) {
-                msg
-                numUids
-            }
-        }
-    `;
-
     const addProjectQuery = gql`
         mutation MyMutation($name: String!) {
             addProject(input: { name: $name }) {
@@ -78,11 +69,36 @@
         }
     `;
 
-    const deleteTaskQuery = gql`
-        mutation MyMutation($id: [ID!] = "") {
-            deleteTask(filter: { id: $id }) {
-                numUids
+    const deleteProjectQuery = gql`
+        mutation MyMutation(
+            $id: [ID!] = ""
+            $taskIds: [ID!] = ""
+            $subTaskIds: [ID!] = ""
+        ) {
+            deleteProject(filter: { id: $id }) {
                 msg
+                numUids
+            }
+            deleteTask(filter: { id: $taskIds }) {
+                msg
+                numUids
+            }
+            deleteSubTask(filter: { id: $subTaskIds }) {
+                msg
+                numUids
+            }
+        }
+    `;
+
+    const deleteTaskQuery = gql`
+        mutation MyMutation($id: [ID!] = "", $subTaskIds: [ID!] = "") {
+            deleteTask(filter: { id: $id }) {
+                msg
+                numUids
+            }
+            deleteSubTask(filter: { id: $subTaskIds }) {
+                msg
+                numUids
             }
         }
     `;
@@ -210,11 +226,65 @@
     }
 
     function deleteProject(id) {
-        mutateDeleteProject({ variables: { id } }).then(() => refresh());
+        var taskIds = getTaskIdsOfProject(id);
+        var subTaskIds = getSubTaskIDsOfProject(id);
+        mutateDeleteProject({
+            variables: { id, taskIds, subTaskIds },
+        }).then(() => refresh());
+    }
+
+    function getTaskIdsOfProject(projectID) {
+        var taskIds = [];
+
+        projects.getCurrentResult().data.queryProject.forEach((project) => {
+            if (project.id == projectID) {
+                project.tasks.forEach((task) => {
+                    taskIds.push(task.id);
+                });
+            }
+        });
+
+        return taskIds;
+    }
+
+    function getSubTaskIDsOfProject(projectID) {
+        var subTaskIds = [];
+
+        projects.getCurrentResult().data.queryProject.forEach((project) => {
+            if (project.id == projectID) {
+                project.tasks.forEach((task) => {
+                    task.subTasks.forEach((subtask) => {
+                        subTaskIds.push(subtask.id);
+                    });
+                });
+            }
+        });
+
+        return subTaskIds;
     }
 
     function deleteTask(id) {
-        mutateDeleteTask({ variables: { id } }).then(() => refresh());
+        var subTaskIds = getSubTaskIdsOfTask(id);
+
+        mutateDeleteTask({ variables: { id, subTaskIds } }).then(() =>
+            refresh()
+        );
+    }
+
+    function getSubTaskIdsOfTask(taskId) {
+        var subTaskIds = [];
+
+        projects.getCurrentResult().data.queryProject.forEach((project) => {
+            project.tasks.forEach((task) => {
+                if (task.id == taskId) {
+                    task.subTasks.forEach((subtask) => {
+                        subTaskIds.push(subtask.id);
+                    });
+                }
+            });
+        });
+
+        return subTaskIds;
     }
 
     function deleteSubTask(id, taskId) {
