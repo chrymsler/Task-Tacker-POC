@@ -62,9 +62,16 @@
             $id: ID = ""
             $name: String = ""
             $status: String = ""
+            $taskId: [ID!] = ""
+            $taskStatus: String = ""
         ) {
             addSubTask(
                 input: { task: { id: $id }, name: $name, status: $status }
+            ) {
+                numUids
+            }
+            updateTask(
+                input: { filter: { id: $taskId }, set: { status: $taskStatus } }
             ) {
                 numUids
             }
@@ -81,10 +88,19 @@
     `;
 
     const deleteSubTaskQuery = gql`
-        mutation MyMutation($id: [ID!] = "") {
+        mutation MyMutation(
+            $id: [ID!] = ""
+            $taskId: [ID!] = ""
+            $taskStatus: String = ""
+        ) {
             deleteSubTask(filter: { id: $id }) {
                 numUids
                 msg
+            }
+            updateTask(
+                input: { filter: { id: $taskId }, set: { status: $taskStatus } }
+            ) {
+                numUids
             }
         }
     `;
@@ -186,9 +202,11 @@
     }
 
     function addSubTask(id, name, status) {
-        mutateAddSubTask({ variables: { id, name, status } }).then(() =>
-            refresh()
-        );
+        const taskId = id;
+        const taskStatus = "P";
+        mutateAddSubTask({
+            variables: { id, name, status, taskId, taskStatus },
+        }).then(() => refresh());
     }
 
     function deleteProject(id) {
@@ -199,8 +217,12 @@
         mutateDeleteTask({ variables: { id } }).then(() => refresh());
     }
 
-    function deleteSubTask(id) {
-        mutateDeleteSubTask({ variables: { id } }).then(() => refresh());
+    function deleteSubTask(id, taskId) {
+        const taskStatus = calcTaskStatus(taskId, id);
+
+        mutateDeleteSubTask({
+            variables: { id, taskId, taskStatus },
+        }).then(() => refresh());
     }
 
     function updateProject(id, name) {
@@ -222,45 +244,53 @@
     function updateSubTaskStatus(id, status, taskId) {
         var taskStatus;
 
-        if (status == "C") {
-            var complete = true;
-
-            projects.getCurrentResult().data.queryProject.forEach((project) => {
-                project.tasks.forEach((task) => {
-                    if (task.id == taskId) {
-                        task.subTasks.forEach((subtask) => {
-                            if (subtask.id != id) {
-                                if (subtask.status == "P") {
-                                    complete = false;
-
-                                    return;
-                                }
-                            }
-                        });
-
-                        if (!complete) {
-                            return;
-                        }
-                    }
-
-                    if (!complete) {
-                        return;
-                    }
-                });
-            });
-
-            if (complete) {
-                taskStatus = "C";
-            } else {
-                taskStatus = "P";
-            }
-        } else {
+        if (status == "P") {
             taskStatus = "P";
+        } else {
+            taskStatus = calcTaskStatus(taskId, id);
         }
 
         mutateUpdateSubTaskStatus({
             variables: { id, status, taskId, taskStatus },
         }).then(() => refresh());
+    }
+
+    function calcTaskStatus(taskId, ignoreSubTaskId) {
+        var taskStatus;
+
+        var complete = true;
+
+        projects.getCurrentResult().data.queryProject.forEach((project) => {
+            project.tasks.forEach((task) => {
+                if (task.id == taskId) {
+                    task.subTasks.forEach((subtask) => {
+                        if (subtask.id != ignoreSubTaskId) {
+                            if (subtask.status == "P") {
+                                complete = false;
+
+                                return;
+                            }
+                        }
+                    });
+
+                    if (!complete) {
+                        return;
+                    }
+                }
+
+                if (!complete) {
+                    return;
+                }
+            });
+        });
+
+        if (complete) {
+            taskStatus = "C";
+        } else {
+            taskStatus = "P";
+        }
+
+        return taskStatus;
     }
 
     function getLabel(title) {
@@ -368,7 +398,10 @@
                                             --&gt;
                                             <a
                                                 on:click={() =>
-                                                    deleteSubTask(subtask.id)}
+                                                    deleteSubTask(
+                                                        subtask.id,
+                                                        task.id
+                                                    )}
                                             >
                                                 [Delete SubTask]
                                             </a>
