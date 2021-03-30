@@ -396,15 +396,6 @@
                                         )}]
                                         {#if hovering}
                                             --&gt;
-                                            <a
-                                                on:click={() =>
-                                                    deleteSubTask(
-                                                        subtask.id,
-                                                        task.id
-                                                    )}
-                                            >
-                                                [Delete SubTask]
-                                            </a>
                                             {#if subtask.status == "P"}
                                                 <a
                                                     on:click={() =>
@@ -428,6 +419,15 @@
                                                     [Not Done]
                                                 </a>
                                             {/if}
+                                            <a
+                                                on:click={() =>
+                                                    deleteSubTask(
+                                                        subtask.id,
+                                                        task.id
+                                                    )}
+                                            >
+                                                [Delete SubTask]
+                                            </a>
                                             <a
                                                 on:click={() =>
                                                     updateSubTask(
