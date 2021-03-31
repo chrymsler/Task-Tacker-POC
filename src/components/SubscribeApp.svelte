@@ -1,12 +1,12 @@
 <script>
     import { gql } from "@apollo/client";
-    import { query, mutation } from "svelte-apollo";
+    import { mutation, subscribe } from "svelte-apollo";
     import Hoverable from "./Hoverable.svelte";
 
     var count = 1;
 
-    const projectsQuery = gql`
-        query AllDataQuery {
+    const subscribeProjectsQuery = gql`
+        subscription AllDataSubscribeQuery {
             queryProject {
                 id
                 name
@@ -185,7 +185,7 @@
         }
     `;
 
-    const projects = query(projectsQuery, { fetchPolicy: "cache-and-network" });
+    const projects = subscribe(subscribeProjectsQuery, { fetchPolicy: "cache-and-network" });
 
     const mutateAddProject = mutation(addProjectQuery);
 
@@ -209,15 +209,13 @@
 
     function addProject(name) {
         mutateAddProject({
-            variables: { name },
-            refetchQueries: [`AllDataQuery`],
+            variables: { name }
         });
     }
 
     function addTask(id, name, status) {
         mutateAddTask({
-            variables: { id, name, status },
-            refetchQueries: [`AllDataQuery`],
+            variables: { id, name, status }
         });
     }
 
@@ -225,8 +223,7 @@
         const taskId = id;
         const taskStatus = "P";
         mutateAddSubTask({
-            variables: { id, name, status, taskId, taskStatus },
-            refetchQueries: [`AllDataQuery`],
+            variables: { id, name, status, taskId, taskStatus }
         });
     }
 
@@ -234,15 +231,14 @@
         var taskIds = getTaskIdsOfProject(id);
         var subTaskIds = getSubTaskIDsOfProject(id);
         mutateDeleteProject({
-            variables: { id, taskIds, subTaskIds },
-            refetchQueries: [`AllDataQuery`],
+            variables: { id, taskIds, subTaskIds }
         });
     }
 
     function getTaskIdsOfProject(projectID) {
         var taskIds = [];
 
-        projects.getCurrentResult().data.queryProject.forEach((project) => {
+        $projects.data.queryProject.forEach((project) => {
             if (project.id == projectID) {
                 project.tasks.forEach((task) => {
                     taskIds.push(task.id);
@@ -256,7 +252,7 @@
     function getSubTaskIDsOfProject(projectID) {
         var subTaskIds = [];
 
-        projects.getCurrentResult().data.queryProject.forEach((project) => {
+        $projects.data.queryProject.forEach((project) => {
             if (project.id == projectID) {
                 project.tasks.forEach((task) => {
                     task.subTasks.forEach((subtask) => {
@@ -273,15 +269,14 @@
         var subTaskIds = getSubTaskIdsOfTask(id);
 
         mutateDeleteTask({
-            variables: { id, subTaskIds },
-            refetchQueries: [`AllDataQuery`],
+            variables: { id, subTaskIds }
         });
     }
 
     function getSubTaskIdsOfTask(taskId) {
         var subTaskIds = [];
 
-        projects.getCurrentResult().data.queryProject.forEach((project) => {
+        $projects.data.queryProject.forEach((project) => {
             project.tasks.forEach((task) => {
                 if (task.id == taskId) {
                     task.subTasks.forEach((subtask) => {
@@ -298,29 +293,25 @@
         const taskStatus = calcTaskStatus(taskId, id);
 
         mutateDeleteSubTask({
-            variables: { id, taskId, taskStatus },
-            refetchQueries: [`AllDataQuery`],
+            variables: { id, taskId, taskStatus }
         });
     }
 
     function updateProject(id, name) {
         mutateUpdateProject({
-            variables: { id, name },
-            refetchQueries: [`AllDataQuery`],
+            variables: { id, name }
         });
     }
 
     function updateTask(id, name, status) {
         mutateUpdateTask({
-            variables: { id, name, status },
-            refetchQueries: [`AllDataQuery`],
+            variables: { id, name, status }
         });
     }
 
     function updateSubTask(id, name, status) {
         mutateUpdateSubTask({
-            variables: { id, name, status },
-            refetchQueries: [`AllDataQuery`],
+            variables: { id, name, status }
         });
     }
 
@@ -334,8 +325,7 @@
         }
 
         mutateUpdateSubTaskStatus({
-            variables: { id, status, taskId, taskStatus },
-            refetchQueries: [`AllDataQuery`],
+            variables: { id, status, taskId, taskStatus }
         });
     }
 
@@ -344,7 +334,7 @@
 
         var complete = true;
 
-        projects.getCurrentResult().data.queryProject.forEach((project) => {
+        $projects.data.queryProject.forEach((project) => {
             project.tasks.forEach((task) => {
                 if (task.id == taskId) {
                     task.subTasks.forEach((subtask) => {
@@ -398,7 +388,6 @@
 <main>
     Subscribe App
     <a on:click={() => addProject(getLabel("Project"))}>[Add Project]</a>
-    <a on:click={() => projects.refetch()}>[Refresh]</a>
 </main>
 <div>
     {#if $projects.loading}
