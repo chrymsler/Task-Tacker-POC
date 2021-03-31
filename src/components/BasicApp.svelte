@@ -396,7 +396,7 @@
 </script>
 
 <main>
-    Projects
+    Basic App
     <a on:click={() => addProject(getLabel("Project"))}>[Add Project]</a>
     <a on:click={() => projects.refetch()}>[Refresh]</a>
 </main>
