@@ -10,10 +10,12 @@
             queryProject {
                 id
                 name
+                taskCount
                 tasks {
                     id
                     name
                     status
+                    subTaskCount
                     createdOn
                     subTasks {
                         id
@@ -28,7 +30,7 @@
 
     const addProjectQuery = gql`
         mutation MyMutation($name: String!) {
-            addProject(input: { name: $name }) {
+            addProject(input: { name: $name, taskCount: 0 }) {
                 numUids
             }
         }
@@ -39,9 +41,24 @@
             $id: ID = ""
             $name: String = ""
             $status: String = ""
+            $projectid: [ID!] = ""
+            $taskCount: Int = 0
         ) {
             addTask(
-                input: { project: { id: $id }, name: $name, status: $status }
+                input: {
+                    project: { id: $id }
+                    name: $name
+                    status: $status
+                    subTaskCount: 0
+                }
+            ) {
+                numUids
+            }
+            updateProject(
+                input: {
+                    filter: { id: $projectid }
+                    set: { taskCount: $taskCount }
+                }
             ) {
                 numUids
             }
@@ -55,6 +72,7 @@
             $status: String = ""
             $taskId: [ID!] = ""
             $taskStatus: String = ""
+            $subTaskCount: Int = 0
         ) {
             addSubTask(
                 input: { task: { id: $id }, name: $name, status: $status }
@@ -62,7 +80,10 @@
                 numUids
             }
             updateTask(
-                input: { filter: { id: $taskId }, set: { status: $taskStatus } }
+                input: {
+                    filter: { id: $taskId }
+                    set: { status: $taskStatus, subTaskCount: $subTaskCount }
+                }
             ) {
                 numUids
             }
@@ -91,13 +112,26 @@
     `;
 
     const deleteTaskQuery = gql`
-        mutation MyMutation($id: [ID!] = "", $subTaskIds: [ID!] = "") {
+        mutation MyMutation(
+            $id: [ID!] = ""
+            $subTaskIds: [ID!] = ""
+            $projectid: [ID!] = ""
+            $taskCount: Int = 0
+        ) {
             deleteTask(filter: { id: $id }) {
                 msg
                 numUids
             }
             deleteSubTask(filter: { id: $subTaskIds }) {
                 msg
+                numUids
+            }
+            updateProject(
+                input: {
+                    filter: { id: $projectid }
+                    set: { taskCount: $taskCount }
+                }
+            ) {
                 numUids
             }
         }
@@ -108,13 +142,17 @@
             $id: [ID!] = ""
             $taskId: [ID!] = ""
             $taskStatus: String = ""
+            $subTaskCount: Int = 0
         ) {
             deleteSubTask(filter: { id: $id }) {
                 numUids
                 msg
             }
             updateTask(
-                input: { filter: { id: $taskId }, set: { status: $taskStatus } }
+                input: {
+                    filter: { id: $taskId }
+                    set: { status: $taskStatus, subTaskCount: $subTaskCount }
+                }
             ) {
                 numUids
             }
@@ -185,7 +223,9 @@
         }
     `;
 
-    const projects = subscribe(subscribeProjectsQuery, { fetchPolicy: "cache-and-network" });
+    const projects = subscribe(subscribeProjectsQuery, {
+        fetchPolicy: "cache-and-network",
+    });
 
     const mutateAddProject = mutation(addProjectQuery);
 
@@ -209,29 +249,65 @@
 
     function addProject(name) {
         mutateAddProject({
-            variables: { name }
+            variables: { name },
         });
     }
 
     function addTask(id, name, status) {
+        const projectid = id;
+        var taskCount = getTaskCount(projectid) + 1;
         mutateAddTask({
-            variables: { id, name, status }
+            variables: { id, name, status, projectid, taskCount },
         });
+    }
+
+    function getTaskCount(projectid) {
+        var taskCount;
+
+        $projects.data.queryProject.forEach((project) => {
+            if (project.id == projectid) {
+                taskCount = project.taskCount;
+                return;
+            }
+        });
+
+        return taskCount;
     }
 
     function addSubTask(id, name, status) {
         const taskId = id;
         const taskStatus = "P";
+        var subTaskCount = getSubTaskCount(taskId) + 1;
+
         mutateAddSubTask({
-            variables: { id, name, status, taskId, taskStatus }
+            variables: { id, name, status, taskId, taskStatus, subTaskCount },
         });
+    }
+
+    function getSubTaskCount(taskid) {
+        var subTaskCount = -1;
+
+        $projects.data.queryProject.forEach((project) => {
+            project.tasks.forEach((task) => {
+                if (task.id == taskid) {
+                    subTaskCount = task.subTaskCount;
+                    return;
+                }
+            });
+
+            if (subTaskCount != -1) {
+                return;
+            }
+        });
+
+        return subTaskCount;
     }
 
     function deleteProject(id) {
         var taskIds = getTaskIdsOfProject(id);
         var subTaskIds = getSubTaskIDsOfProject(id);
         mutateDeleteProject({
-            variables: { id, taskIds, subTaskIds }
+            variables: { id, taskIds, subTaskIds },
         });
     }
 
@@ -265,11 +341,12 @@
         return subTaskIds;
     }
 
-    function deleteTask(id) {
+    function deleteTask(id, projectid) {
         var subTaskIds = getSubTaskIdsOfTask(id);
+        var taskCount = getTaskCount(projectid) - 1;
 
         mutateDeleteTask({
-            variables: { id, subTaskIds }
+            variables: { id, subTaskIds, projectid, taskCount },
         });
     }
 
@@ -291,27 +368,28 @@
 
     function deleteSubTask(id, taskId) {
         const taskStatus = calcTaskStatus(taskId, id);
+        var subTaskCount = getSubTaskCount(taskId) - 1;
 
         mutateDeleteSubTask({
-            variables: { id, taskId, taskStatus }
+            variables: { id, taskId, taskStatus, subTaskCount },
         });
     }
 
     function updateProject(id, name) {
         mutateUpdateProject({
-            variables: { id, name }
+            variables: { id, name },
         });
     }
 
     function updateTask(id, name, status) {
         mutateUpdateTask({
-            variables: { id, name, status }
+            variables: { id, name, status },
         });
     }
 
     function updateSubTask(id, name, status) {
         mutateUpdateSubTask({
-            variables: { id, name, status }
+            variables: { id, name, status },
         });
     }
 
@@ -325,7 +403,7 @@
         }
 
         mutateUpdateSubTaskStatus({
-            variables: { id, status, taskId, taskStatus }
+            variables: { id, status, taskId, taskStatus },
         });
     }
 
@@ -399,7 +477,7 @@
             {#each $projects.data.queryProject as project}
                 <li>
                     <Hoverable let:hovering>
-                        {project.name}
+                        {project.name} ({project.taskCount} tasks)
                         {#if hovering}
                             --&gt;
                             <a
@@ -427,7 +505,9 @@
                     {#each project.tasks as task}
                         <li>
                             <Hoverable let:hovering>
-                                {task.name} [{decodeStatus(task.status)}]
+                                {task.name} ({task.subTaskCount} subtasks) [{decodeStatus(
+                                    task.status
+                                )}]
                                 {#if hovering}
                                     --&gt;
                                     <a
@@ -440,7 +520,10 @@
                                     >
                                         [Add SubTask]
                                     </a>
-                                    <a on:click={() => deleteTask(task.id)}>
+                                    <a
+                                        on:click={() =>
+                                            deleteTask(task.id, project.id)}
+                                    >
                                         [Delete Task]
                                     </a>
                                     <a
