@@ -1,4 +1,4 @@
-This is a Web App POC build on top of Dgraph, Svelte, and Svelte-Apollow.
+This is a Web App POC built on top of Dgraph, Svelte, and Svelte-Apollo.
 
 Please click [here](https://clarity-bound.blogspot.com/2021/04/my-dgraph-based-poc-web-app.html) for more information.
 
