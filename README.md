@@ -1,4 +1,6 @@
-*Looking for a shareable component template? Go here --> [sveltejs/component-template](https://github.com/sveltejs/component-template)*
+This is a Web App POC build on top of Dgraph, Svelte, and Svelte-Apollow.
+
+Please click [here](https://clarity-bound.blogspot.com/2021/04/my-dgraph-based-poc-web-app.html) for more information.
 
 ---
 
