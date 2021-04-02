@@ -1,0 +1,25 @@
+type Project  @withSubscription {
+	id: ID!
+	name: String!
+	tasks: [Task] @hasInverse(field:project)
+	taskCount: Int
+}
+
+type Task  @withSubscription {
+	id: ID!
+	name: String!
+	createdOn: DateTime
+	status: String!
+	subTasks: [SubTask] @hasInverse(field:task)
+	project: Project!
+	subTaskCount: Int
+}
+
+type SubTask  @withSubscription {
+	id: ID!
+	name: String!
+	createdOn: DateTime
+	status: String!
+	task: Task!
+}
+
